@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{{SUB}} · Pulse</title>
+  <style>{{CSS}}</style>
+</head>
+<body class="page-console">
+{{TOPBAR}}
+<main class="console console--wide">
+  <a class="back-link" href="/">&larr; Risk overview</a>
+  <div class="console__head">
+    <h1>Subject <code>{{SUB}}</code></h1>
+    <p class="sub">Signal history, derived behavioral baseline, and current score breakdown.</p>
+  </div>
+
+  <section class="panel">
+    <div class="panel__head"><h2>Current verdict</h2></div>
+    <div class="panel__body">
+      {{VERDICT}}
+    </div>
+  </section>
+
+  <div class="two-col">
+    <section class="panel">
+      <div class="panel__head"><h2>Behavioral baseline</h2></div>
+      <div class="panel__body">
+        {{BASELINE}}
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel__head"><h2>Access decisions</h2></div>
+      <div class="panel__body">
+        {{REVOCATIONS}}
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="panel__head"><h2>Signal history</h2></div>
+    <div class="panel__body panel__body--flush">
+      <table class="data-table">
+        <thead><tr><th>When (UTC)</th><th>Kind</th><th>Source IP</th><th>Device / UA</th></tr></thead>
+        <tbody>
+          {{SIGNAL_ROWS}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>

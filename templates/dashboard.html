@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Pulse · HOLDFAST</title>
+  <style>{{CSS}}</style>
+</head>
+<body class="page-console">
+{{TOPBAR}}
+<main class="console console--wide">
+  <div class="console__head">
+    <h1>Risk overview</h1>
+    <p class="sub">Adaptive identity risk re-scored from live login telemetry. v1 records continuous-access decisions; it does not force Keystone.</p>
+  </div>
+
+  {{STATS}}
+
+  <section class="panel">
+    <div class="panel__head"><h2>Current risk by subject</h2></div>
+    <div class="panel__body panel__body--flush">
+      <table class="data-table">
+        <thead><tr><th>Subject</th><th>Level</th><th>Score</th><th>Reasons</th></tr></thead>
+        <tbody>
+          {{RISK_ROWS}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="two-col">
+    <section class="panel">
+      <div class="panel__head"><h2>Recent high-risk decisions</h2></div>
+      <div class="panel__body">
+        {{TIMELINE}}
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel__head"><h2>Signal volume</h2></div>
+      <div class="panel__body">
+        {{VOLUME}}
+      </div>
+    </section>
+  </div>
+</main>
+</body>
+</html>
