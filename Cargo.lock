@@ -745,6 +745,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "odyssey"
+version = "0.1.0"
+
+[[package]]
 name = "once_cell"
 version = "1.21.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -838,6 +842,7 @@ dependencies = [
  "axum",
  "getrandom",
  "hex",
+ "odyssey",
  "serde",
  "serde_json",
  "sqlx",

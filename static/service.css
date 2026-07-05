@@ -1,0 +1,115 @@
+/* Pulse service surface, layered after Odyssey canonical CSS.
+ * Only the risk-dashboard specifics the canonical kit lacks: the top-bar
+ * all-apps / user chip, the stat-level tints, panels, the risk data-table,
+ * the risk-level badges, the verdict block, the behavioral key/value grid,
+ * the decision timeline, the signal-volume bars, empty states, and the
+ * error card. Base / tokens / font / .btn / .card / .field / .pill / .stat /
+ * table / .topbar / .console are all provided by Odyssey canonical.
+ */
+
+.page-console { background: var(--bg); }
+.console--wide { max-width: 1120px; }
+.back-link { display: inline-block; margin-bottom: 18px; color: var(--ink-3); font-size: 13px; font-weight: 500; }
+.back-link:hover { color: var(--accent); }
+
+/* Top-bar right-side helpers rendered by Pulse's topbar(). */
+.allapps {
+  display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+  border: 1px solid var(--border-2); border-radius: 8px; background: var(--surface);
+  font-size: 12.5px; font-weight: 500; color: var(--ink-2);
+}
+.allapps:hover { background: var(--bg-2); color: var(--ink); }
+.allapps svg { width: 14px; height: 14px; opacity: .8; }
+.userchip { display: inline-flex; align-items: center; gap: 8px; padding-left: 4px; }
+.userchip__avatar {
+  width: 28px; height: 28px; border-radius: 8px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent); color: #fff; font-weight: 600; font-size: 12px;
+}
+.user-email { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+@media (max-width: 640px) { .user-email, .topbar__title { display: none; } }
+
+/* ---- stat-level tints (canonical .stat / .stat__value provide the base) -- */
+.stat--danger .stat__value { color: var(--down-ink); }
+.stat--warn .stat__value { color: var(--warn-ink); }
+
+/* ---- panels (flat, border-led — Pulse's card equivalent) ---------------- */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--sh-xs); margin-bottom: 24px; overflow: hidden; }
+.panel__head { padding: 16px 22px; border-bottom: 1px solid var(--border); }
+.panel__head h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.panel__body { padding: 22px; }
+.panel__body--flush { padding: 0; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.two-col .panel { margin-bottom: 0; }
+
+/* ---- risk data-table ---------------------------------------------------- */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.data-table th, .data-table td { padding: 12px 22px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+.data-table th { font-size: 11.5px; letter-spacing: .02em; color: var(--ink-3); font-weight: 600; background: var(--surface-2); }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table tbody tr:hover { background: var(--surface-2); }
+.data-table td { color: var(--ink-2); }
+.cell-sub a { font-weight: 600; color: var(--accent-2); }
+.cell-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.cell-reasons { color: var(--ink-2); }
+.cell-kind { font-family: var(--mono); font-size: 13px; color: var(--ink); }
+.cell-ua { color: var(--ink-3); max-width: 320px; overflow-wrap: anywhere; }
+.empty-cell { color: var(--ink-3); text-align: center; padding: 40px 22px; }
+
+/* ---- risk-level badges (Pulse tints; overrides the canonical .badge alias) */
+.badge { text-transform: none; letter-spacing: 0; border-radius: var(--radius-sm); font-weight: 550; padding: 2px 8px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); }
+.badge-low { background: var(--ok-soft); border-color: var(--ok-border); color: var(--ok-ink); }
+.badge-medium { background: var(--warn-soft); border-color: var(--warn-border); color: var(--warn-ink); }
+.badge-high { background: var(--down-soft); border-color: var(--down-border); color: var(--down-ink); }
+
+/* ---- verdict ------------------------------------------------------------ */
+.verdict { display: flex; align-items: center; gap: 24px; }
+.verdict--empty .verdict__score { color: var(--ink-3); }
+.verdict__score { font-size: 48px; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--ink); }
+.verdict__max { font-size: 18px; font-weight: 500; color: var(--ink-3); }
+.verdict__meta { display: flex; flex-direction: column; gap: 8px; }
+.verdict__reasons { color: var(--ink-2); }
+.verdict__updated { font-size: 11.5px; color: var(--ink-3); }
+.breakdown { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+.breakdown__k { font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3); font-weight: 600; }
+.breakdown__v { color: var(--ink-2); }
+
+/* ---- behavioral key/value grid ------------------------------------------ */
+.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.kv__k { color: var(--ink-2); }
+.kv__v { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+/* ---- decision timeline -------------------------------------------------- */
+.timeline { list-style: none; margin: 0; padding: 0; }
+.timeline__item { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.timeline__item:last-child { border-bottom: 0; }
+.timeline__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.timeline__head a { font-weight: 600; color: var(--accent-2); }
+.timeline__tag { font-size: 11px; font-weight: 550; letter-spacing: 0; color: var(--down-ink); background: var(--down-soft); border: 1px solid var(--down-border); border-radius: var(--radius-sm); padding: 2px 8px; }
+.timeline__time { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.timeline__body { margin-top: 4px; color: var(--ink-2); font-size: 13px; }
+
+/* ---- signal-volume bars ------------------------------------------------- */
+.bars { display: flex; flex-direction: column; gap: 12px; }
+.bar-row { display: grid; grid-template-columns: 160px 1fr 48px; align-items: center; gap: 12px; }
+.bar-row__label { font-family: var(--mono); font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.bar-row__track { height: 8px; background: var(--bg-2); border-radius: 999px; overflow: hidden; }
+.bar-row__fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.bar-row__count { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; color: var(--ink); }
+
+/* ---- empty states ------------------------------------------------------- */
+.empty-state { text-align: center; padding: 40px 16px; color: var(--ink-3); }
+.empty-state p { margin: 0; }
+
+/* ---- error card --------------------------------------------------------- */
+.error-card { max-width: 460px; margin: 56px auto; text-align: center; }
+.error-card__code { font-size: 48px; font-weight: 600; color: var(--accent-2); letter-spacing: -.02em; }
+.error-card__title { margin: 8px 0; font-size: 22px; font-weight: 600; }
+.error-card__msg { margin: 0 0 24px; color: var(--ink-2); }
+
+@media (max-width: 880px) {
+  .two-col { grid-template-columns: 1fr; }
+  .kv-grid { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: 110px 1fr 40px; }
+}

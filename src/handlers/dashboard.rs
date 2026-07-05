@@ -11,7 +11,7 @@ use axum::response::{Html, IntoResponse, Response};
 
 use crate::auth;
 use crate::config::{DASHBOARD_LIMIT, USER_SIGNAL_LIMIT};
-use crate::handlers::{esc, fmt_ts, level_badge, topbar, APP_CSS};
+use crate::handlers::{app_css, esc, fmt_ts, level_badge, topbar};
 use crate::poller::join_reasons;
 use crate::scoring::{assess, Candidate};
 use crate::store::{build_baseline, KindCount, Revocation, Risk, Signal};
@@ -53,7 +53,7 @@ pub async fn index(State(state): State<AppState>, headers: HeaderMap) -> Respons
     let volume_html = render_volume(&volume);
 
     let body = DASHBOARD_HTML
-        .replace("{{CSS}}", APP_CSS)
+        .replace("{{CSS}}", app_css())
         .replace("{{TOPBAR}}", &topbar("Risk overview", &email))
         .replace("{{STATS}}", &stats)
         .replace("{{RISK_ROWS}}", &risk_rows)
@@ -121,7 +121,7 @@ pub async fn user(
     let rev_rows = render_user_revocations(&revocations);
 
     let body = USER_HTML
-        .replace("{{CSS}}", APP_CSS)
+        .replace("{{CSS}}", app_css())
         .replace("{{TOPBAR}}", &topbar("Subject risk", &email))
         .replace("{{SUB}}", &esc(&sub))
         .replace("{{VERDICT}}", &verdict)

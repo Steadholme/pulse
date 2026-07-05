@@ -6,3 +6,6 @@ Cargo.lock.orig
 # Editor / OS
 .DS_Store
 *.swp
+
+# Agent scratch
+.workflow/
