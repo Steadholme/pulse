@@ -3,7 +3,7 @@
 Pulse re-scores identity risk from the login telemetry already flowing into **Watchtower**. A
 background poller builds per-subject behavioral baselines (known IPs / devices / hours), scores each
 new authentication event by how far it deviates, and records continuous-access decisions. It is part
-of the HOLDFAST sovereign-infra estate and follows the same layout as `inkwell` / `relay`.
+of the Steadholme sovereign-infra estate and follows the same layout as `inkwell` / `relay`.
 
 - **Subdomain:** `risk.w33d.xyz` · **internal port:** `9300` · **db:** `pulse`
 - **Surfaces (split at the Sluice gateway):**
