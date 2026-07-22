@@ -4,8 +4,8 @@
 //! `api` is the service-token live-scoring surface.
 //!
 //! The shared design tokens / CSS are embedded (via `include_str!`) and inlined into every page,
-//! matching the Steadholme enterprise brand (the Keystone/inkwell look): dark command-center palette,
-//! brand gradient, indigo accent, status colors, cards, app-bar.
+//! matching the Steadholme enterprise brand while Pulse uses a light, paper-instrument surface for
+//! causal identity-risk traces, restrained status marks, and the shared app-bar.
 
 pub mod api;
 pub mod dashboard;

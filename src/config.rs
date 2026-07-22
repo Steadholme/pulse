@@ -22,6 +22,8 @@ pub const DEFAULT_EVENT_LIMIT: usize = 200;
 pub const DASHBOARD_LIMIT: usize = 100;
 /// Hard cap on signal rows the per-user view renders.
 pub const USER_SIGNAL_LIMIT: usize = 200;
+/// Hard cap on signals used to reconstruct the featured identity seismograph trace.
+pub const SEISMO_TRACE_LIMIT: usize = 120;
 
 /// Optional Klaxon step-up notification target.
 #[derive(Clone, Debug)]
@@ -78,7 +80,8 @@ impl Config {
         if let Some(v) = env_nonempty("PULSE_POLL_ENABLED") {
             config.poll_enabled = truthy(&v);
         }
-        if let Some(v) = env_nonempty("PULSE_POLL_INTERVAL_SECS").and_then(|v| v.parse::<u64>().ok())
+        if let Some(v) =
+            env_nonempty("PULSE_POLL_INTERVAL_SECS").and_then(|v| v.parse::<u64>().ok())
         {
             if v > 0 {
                 config.poll_interval_secs = v;

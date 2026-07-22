@@ -2,8 +2,8 @@
 //!
 //! Drives the real `app` router via `tower::oneshot`, exactly like the rest of the estate. Covers:
 //! health, the SSO dashboard, the per-user view, the `/api/score` service-token guard (fail-closed
-//! + bearer enforcement), live scoring math through the HTTP surface, and the poller's `rescore`
-//! path producing a high verdict + a deduped revocation.
+//! with bearer enforcement), live scoring math through the HTTP surface, and the poller's
+//! `rescore` path producing a high verdict plus a deduped revocation.
 
 use std::sync::Arc;
 
@@ -15,7 +15,11 @@ use pulse::{app, build_dev_state, AppState};
 use tower::ServiceExt;
 
 fn get(path: &str) -> Request<Body> {
-    Request::builder().method("GET").uri(path).body(Body::empty()).unwrap()
+    Request::builder()
+        .method("GET")
+        .uri(path)
+        .body(Body::empty())
+        .unwrap()
 }
 
 fn get_sso(path: &str, sub: &str, email: &str) -> Request<Body> {
@@ -73,7 +77,10 @@ async fn dashboard_renders_empty_then_lists() {
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("Risk overview"));
     assert!(body.contains("No subjects scored yet"));
-    assert!(body.contains("admin@w33d.xyz"), "operator email shown in topbar");
+    assert!(
+        body.contains("admin@w33d.xyz"),
+        "operator email shown in topbar"
+    );
 }
 
 #[tokio::test]
@@ -83,6 +90,8 @@ async fn user_view_renders_for_unknown_subject() {
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains("ghost"));
     assert!(body.contains("No verdict yet"));
+    assert!(body.contains(r#"class="verdict verdict--empty" data-state="unscored""#));
+    assert!(!body.contains(r#"class="verdict verdict--empty" data-level="low""#));
 }
 
 #[tokio::test]
@@ -146,10 +155,11 @@ async fn score_endpoint_computes_live_verdict() {
     let v: serde_json::Value = serde_json::from_str(&body).unwrap();
     assert_eq!(v["level"], "medium");
     assert!(v["score"].as_f64().unwrap() > 0.0);
-    assert!(v["reasons"].as_array().unwrap().iter().any(|r| r
-        .as_str()
+    assert!(v["reasons"]
+        .as_array()
         .unwrap()
-        .contains("new source IP")));
+        .iter()
+        .any(|r| r.as_str().unwrap().contains("new source IP")));
 }
 
 #[tokio::test]
@@ -190,7 +200,11 @@ async fn rescore_records_high_verdict_and_dedupes_revocation() {
     }
 
     let risk = state.store.get_risk("u1").await.expect("verdict present");
-    assert_eq!(risk.level, "high", "sustained brute-force stays high; score {}", risk.score);
+    assert_eq!(
+        risk.level, "high",
+        "sustained brute-force stays high; score {}",
+        risk.score
+    );
 
     // At least one high-risk decision was recorded; re-running rescore on the same triggering
     // signal does NOT add another (deduped per signal id).
