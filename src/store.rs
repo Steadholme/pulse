@@ -255,7 +255,11 @@ impl Store for InMemoryStore {
     }
 
     async fn signal_count(&self) -> i64 {
-        self.inner.lock().expect("inner lock poisoned").signals.len() as i64
+        self.inner
+            .lock()
+            .expect("inner lock poisoned")
+            .signals
+            .len() as i64
     }
 
     async fn signal_volume(&self) -> Vec<KindCount> {
@@ -432,12 +436,11 @@ impl PgStore {
     }
 
     async fn get_risk_async(&self, sub: &str) -> Result<Option<Risk>, sqlx::Error> {
-        let row = sqlx::query(
-            "SELECT sub, score, level, reasons, updated_at FROM risk WHERE sub = $1",
-        )
-        .bind(sub)
-        .fetch_optional(&self.pool)
-        .await?;
+        let row =
+            sqlx::query("SELECT sub, score, level, reasons, updated_at FROM risk WHERE sub = $1")
+                .bind(sub)
+                .fetch_optional(&self.pool)
+                .await?;
         match row {
             Some(r) => Ok(Some(Self::risk_from_row(&r)?)),
             None => Ok(None),
@@ -630,7 +633,10 @@ mod tests {
         let store = InMemoryStore::new();
         let s = sig("wt_1", "u1", "login.success", "10.0.0.1", 1000);
         assert!(store.record_signal(&s).await.unwrap());
-        assert!(!store.record_signal(&s).await.unwrap(), "second insert is a no-op");
+        assert!(
+            !store.record_signal(&s).await.unwrap(),
+            "second insert is a no-op"
+        );
         assert_eq!(store.signal_count().await, 1);
     }
 

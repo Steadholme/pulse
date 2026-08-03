@@ -317,9 +317,6 @@ mod tests {
     #[test]
     fn join_reasons_has_fallback() {
         assert_eq!(join_reasons(&[]), "no specific deviation");
-        assert_eq!(
-            join_reasons(&["a".to_string(), "b".to_string()]),
-            "a · b"
-        );
+        assert_eq!(join_reasons(&["a".to_string(), "b".to_string()]), "a · b");
     }
 }

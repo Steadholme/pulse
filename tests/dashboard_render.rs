@@ -687,7 +687,9 @@ async fn template_values_cannot_smuggle_later_tokens() {
 
     let (status, body) = call(&state, &path).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(occurrences(&body, "{{VERDICT}}") >= 2);
+    assert_eq!(occurrences(&body, "{{VERDICT}}"), 1);
+    assert!(body.contains("<title>Subject risk · Pulse</title>"));
+    assert!(body.contains("<h1>Subject <code>{{VERDICT}}</code></h1>"));
     assert!(body.contains("reason {{SIGNAL_ROWS}} stays text"));
     assert_eq!(occurrences(&body, "class=\"verdict\""), 1);
 }

@@ -229,7 +229,12 @@ mod tests {
     fn disabled_sink_is_noop_and_never_drops() {
         let sink = AuditSink::disabled();
         for _ in 0..1000 {
-            sink.emit(AuditEvent::warning("pulse.risk.high", "u1", "session", "score=80"));
+            sink.emit(AuditEvent::warning(
+                "pulse.risk.high",
+                "u1",
+                "session",
+                "score=80",
+            ));
         }
         assert_eq!(sink.dropped(), 0);
     }
@@ -247,7 +252,8 @@ mod tests {
     #[test]
     fn event_serializes_to_safe_fields() {
         let ev = AuditEvent::warning("pulse.risk.high", "u_123", "session", "score=82 level=high");
-        let v: serde_json::Value = serde_json::from_str(&serde_json::to_string(&ev).unwrap()).unwrap();
+        let v: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string(&ev).unwrap()).unwrap();
         let mut keys: Vec<String> = v.as_object().unwrap().keys().cloned().collect();
         keys.sort();
         assert_eq!(
@@ -264,6 +270,9 @@ mod tests {
         for _ in 0..(QUEUE_CAPACITY * 8) {
             sink.emit(AuditEvent::warning("pulse.risk.high", "u", "s", "d"));
         }
-        assert!(sink.dropped() > 0, "expected drops once the queue saturated");
+        assert!(
+            sink.dropped() > 0,
+            "expected drops once the queue saturated"
+        );
     }
 }

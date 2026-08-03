@@ -31,7 +31,9 @@ async fn pg_store_full_integration() {
     };
 
     // --- connect / migrate (idempotent: run twice) -------------------------
-    let pg = PgStore::connect(&url).await.expect("connect TEST_DATABASE_URL");
+    let pg = PgStore::connect(&url)
+        .await
+        .expect("connect TEST_DATABASE_URL");
     pg.migrate().await.expect("migrate");
     pg.migrate().await.expect("migrate is idempotent");
 
@@ -46,7 +48,11 @@ async fn pg_store_full_integration() {
         "DELETE FROM risk WHERE sub = $1",
         "DELETE FROM revocations WHERE sub = $1",
     ] {
-        sqlx::query(stmt).bind(TEST_SUB).execute(&admin).await.expect("reset");
+        sqlx::query(stmt)
+            .bind(TEST_SUB)
+            .execute(&admin)
+            .await
+            .expect("reset");
     }
 
     // --- signal de-dup by id ----------------------------------------------
@@ -59,7 +65,10 @@ async fn pg_store_full_integration() {
         ts: 1_700_000_000,
     };
     assert!(pg.record_signal(&s1).await.unwrap(), "first insert");
-    assert!(!pg.record_signal(&s1).await.unwrap(), "duplicate is a no-op");
+    assert!(
+        !pg.record_signal(&s1).await.unwrap(),
+        "duplicate is a no-op"
+    );
 
     let s2 = Signal {
         id: "wt_pg_2".to_string(),
@@ -110,8 +119,14 @@ async fn pg_store_full_integration() {
         reason: "high risk".to_string(),
         ts: 1_700_000_200,
     };
-    assert!(pg.insert_revocation(&rev).await.unwrap(), "first revocation");
-    assert!(!pg.insert_revocation(&rev).await.unwrap(), "dup revocation no-op");
+    assert!(
+        pg.insert_revocation(&rev).await.unwrap(),
+        "first revocation"
+    );
+    assert!(
+        !pg.insert_revocation(&rev).await.unwrap(),
+        "dup revocation no-op"
+    );
     assert_eq!(pg.revocations_for_sub(TEST_SUB, 10).await.len(), 1);
 
     // --- aggregates --------------------------------------------------------

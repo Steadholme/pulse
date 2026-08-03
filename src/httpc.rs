@@ -45,7 +45,11 @@ fn parse_url(url: &str) -> Option<Url> {
         host,
         port,
         authority: authority.to_string(),
-        path: if path.is_empty() { "/".to_string() } else { path.to_string() },
+        path: if path.is_empty() {
+            "/".to_string()
+        } else {
+            path.to_string()
+        },
     })
 }
 
@@ -82,12 +86,7 @@ async fn get_inner(url: &str) -> std::io::Result<String> {
 
 /// `POST url` with a JSON body and a bearer token. Best-effort: returns the response status, or
 /// `None` on any failure. Bounded by `timeout`.
-pub async fn post_json(
-    url: &str,
-    bearer: &str,
-    body: &str,
-    timeout: Duration,
-) -> Option<u16> {
+pub async fn post_json(url: &str, bearer: &str, body: &str, timeout: Duration) -> Option<u16> {
     match tokio::time::timeout(timeout, post_inner(url, bearer, body)).await {
         Ok(Ok(status)) => Some(status),
         Ok(Err(e)) => {

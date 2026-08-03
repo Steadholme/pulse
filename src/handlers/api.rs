@@ -67,7 +67,9 @@ async fn handle(
     }
     if let Some(h) = req.hour {
         if h > 23 {
-            return Err(AppError::InvalidRequest("`hour` must be 0..=23".to_string()));
+            return Err(AppError::InvalidRequest(
+                "`hour` must be 0..=23".to_string(),
+            ));
         }
     }
 
