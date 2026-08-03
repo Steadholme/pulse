@@ -4,51 +4,75 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234F46E5'/%3E%3Cpath d='M5 17h5l2-7 5 14 3-7h7' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <title>Subject risk · Pulse</title>
   <style>{{CSS}}</style>
 </head>
 <body class="page-console">
-{{TOPBAR}}
-<main class="console console--wide">
-  <a class="back-link" href="/">&larr; Risk overview</a>
-  <div class="console__head">
-    <h1>Subject <code>{{SUB}}</code></h1>
-    <p class="sub">Signal history, derived behavioral baseline, and current score breakdown.</p>
-  </div>
+  <a class="skip-link" href="#main">Skip to content</a>
+  {{TOPBAR}}
+  <main class="console console--wide" id="main" tabindex="-1">
+    <a class="back-link" href="/">&larr; Risk overview</a>
+    <div class="console__head">
+      <h1>Subject <code>{{SUB}}</code></h1>
+      <p class="sub">A bounded reconstruction from this subject's recorded signals:
+      current verdict, orbit, deviation ledger, and access decisions.
+      Not live telemetry.</p>
+    </div>
 
-  <section class="panel">
-    <div class="panel__head"><h2>Current verdict</h2></div>
-    <div class="panel__body">
+    <section class="verdict-sec" aria-labelledby="verdict-h">
+      <h2 class="sec-h" id="verdict-h">Current verdict</h2>
       {{VERDICT}}
-    </div>
-  </section>
+    </section>
 
-  <div class="two-col">
-    <section class="panel">
-      <div class="panel__head"><h2>Behavioral baseline</h2></div>
-      <div class="panel__body">
-        {{BASELINE}}
+    <section class="orbit-sec" aria-labelledby="orbit-h">
+      <h2 class="sec-h" id="orbit-h">Signal orbit</h2>
+      {{ORBIT}}
+      <p class="orbit-key">Dashed ring: learned activity envelope · point shape:
+      assessed level · point stroke pattern: signal kind · a reconstruction,
+      not live telemetry.</p>
+    </section>
+
+    <section class="ledger-sec">
+      <h2 class="sec-h" id="u-ledger-h">Deviation ledger</h2>
+      <div class="tablewrap" role="region" tabindex="0" aria-labelledby="u-ledger-h">
+        <table class="data-table">
+          <caption>Causal reconstruction from recorded signals, newest first.
+          Scrolls horizontally on narrow screens.</caption>
+          <thead><tr>
+            <th scope="col" class="col-when">When (UTC)</th>
+            <th scope="col" class="col-kind">Kind</th>
+            <th scope="col" class="col-score">Score</th>
+            <th scope="col" class="col-level">Level</th>
+            <th scope="col" class="col-deviation">Deviation</th>
+          </tr></thead>
+          <tbody>{{DEVIATION_LEDGER}}</tbody>
+        </table>
       </div>
     </section>
-    <section class="panel">
-      <div class="panel__head"><h2>Access decisions</h2></div>
-      <div class="panel__body">
-        {{REVOCATIONS}}
+
+    <section class="decisions-sec" aria-labelledby="decisions-h">
+      <h2 class="sec-h" id="decisions-h">Access decisions</h2>
+      {{ACCESS_DECISIONS}}
+    </section>
+
+    <section class="history-sec">
+      <h2 class="sec-h" id="history-h">Signal history</h2>
+      <div class="tablewrap" role="region" tabindex="0" aria-labelledby="history-h">
+        <table class="data-table">
+          <caption>Recorded signals, newest first (bounded history). Scrolls
+          horizontally on narrow screens.</caption>
+          <thead><tr>
+            <th scope="col" class="col-when">When (UTC)</th>
+            <th scope="col" class="col-kind">Kind</th>
+            <th scope="col" class="col-level">Level</th>
+            <th scope="col" class="col-ip">Source IP</th>
+            <th scope="col" class="col-ua">Device / UA</th>
+          </tr></thead>
+          <tbody>{{SIGNAL_ROWS}}</tbody>
+        </table>
       </div>
     </section>
-  </div>
-
-  <section class="panel">
-    <div class="panel__head"><h2>Signal history</h2></div>
-    <div class="panel__body panel__body--flush">
-      <table class="data-table">
-        <thead><tr><th>When (UTC)</th><th>Kind</th><th>Source IP</th><th>Device / UA</th></tr></thead>
-        <tbody>
-          {{SIGNAL_ROWS}}
-        </tbody>
-      </table>
-    </div>
-  </section>
-</main>
+  </main>
 </body>
 </html>

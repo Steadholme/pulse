@@ -4,45 +4,67 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234F46E5'/%3E%3Cpath d='M5 17h5l2-7 5 14 3-7h7' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <title>Pulse · Steadholme</title>
   <style>{{CSS}}</style>
 </head>
 <body class="page-console">
-{{TOPBAR}}
-<main class="console console--wide">
-  <div class="console__head">
-    <h1>Risk overview</h1>
-    <p class="sub">Adaptive identity risk re-scored from live login telemetry. v1 records continuous-access decisions; it does not force Keystone.</p>
-  </div>
-
-  {{STATS}}
-
-  <section class="panel">
-    <div class="panel__head"><h2>Current risk by subject</h2></div>
-    <div class="panel__body panel__body--flush">
-      <table class="data-table">
-        <thead><tr><th>Subject</th><th>Level</th><th>Score</th><th>Reasons</th></tr></thead>
-        <tbody>
-          {{RISK_ROWS}}
-        </tbody>
-      </table>
+  <a class="skip-link" href="#main">Skip to content</a>
+  {{TOPBAR}}
+  <main class="console console--wide" id="main" tabindex="-1">
+    <div class="console__head">
+      <h1>Risk overview</h1>
+      <p class="sub">A paper record of identity risk: current verdicts, one featured
+      reconstruction, and the decisions they triggered. The tape is rebuilt from
+      recorded signals; it is not a live feed.</p>
     </div>
-  </section>
 
-  <div class="two-col">
-    <section class="panel">
-      <div class="panel__head"><h2>Recent high-risk decisions</h2></div>
-      <div class="panel__body">
-        {{TIMELINE}}
+    <section class="readout-sec" aria-labelledby="readout-h">
+      <h2 class="sec-h" id="readout-h">Current readout</h2>
+      {{READOUT}}
+    </section>
+
+    <section class="tape-sec" aria-labelledby="tape-h">
+      <h2 class="sec-h" id="tape-h">Signal tape — featured subject</h2>
+      {{SEISMOGRAPH}}
+      <p class="tape-key">Solid rule: high threshold · dashed rule: medium threshold ·
+      point shape: assessed level · point stroke pattern: signal kind.</p>
+      <div class="tape-legend">
+        <p class="legend-cap">Plotted subjects</p>
+        {{ENDPOINT_LEGEND}}
       </div>
     </section>
-    <section class="panel">
-      <div class="panel__head"><h2>Signal volume</h2></div>
-      <div class="panel__body">
-        {{VOLUME}}
+
+    <section class="roster-sec">
+      <h2 class="sec-h" id="roster-h">Subject roster</h2>
+      <div class="tablewrap" role="region" tabindex="0" aria-labelledby="roster-h">
+        <table class="data-table">
+          <caption>Current risk by subject, highest score first. Scrolls horizontally
+          on narrow screens.</caption>
+          <thead><tr>
+            <th scope="col" class="col-subject">Subject</th>
+            <th scope="col" class="col-level">Level</th>
+            <th scope="col" class="col-score">Score</th>
+            <th scope="col" class="col-reasons">Reasons</th>
+            <th scope="col" class="col-updated">Updated (UTC)</th>
+          </tr></thead>
+          <tbody>{{ROSTER_ROWS}}</tbody>
+        </table>
       </div>
+      {{ROSTER_CARDS}}
     </section>
-  </div>
-</main>
+
+    <section class="rail-sec" aria-labelledby="rail-h">
+      <h2 class="sec-h" id="rail-h">Decision rail</h2>
+      {{DECISION_RAIL}}
+    </section>
+
+    <section class="volume-sec" aria-labelledby="volume-h">
+      <h2 class="sec-h" id="volume-h">Signal volume by kind</h2>
+      {{VOLUME}}
+      <p class="volume-note">Kind is a category, not a risk level — a failure signal
+      can still score low.</p>
+    </section>
+  </main>
 </body>
 </html>

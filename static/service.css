@@ -1,16 +1,27 @@
-/* Pulse service surface, layered after Odyssey canonical CSS.
- * Only the risk-dashboard specifics the canonical kit lacks: the top-bar
- * all-apps / user chip, the stat-level tints, panels, the risk data-table,
- * the risk-level badges, the verdict block, the behavioral key/value grid,
- * the decision timeline, the signal-volume bars, empty states, and the
- * error card. Base / tokens / font / .btn / .card / .field / .pill / .stat /
- * table / .topbar / .console are all provided by Odyssey canonical.
+/* Pulse service surface — a light, paper-instrument record of identity risk.
+ * Layered after Odyssey canonical CSS (base / tokens / font / .btn / .badge /
+ * .console / .topbar / .sr-only are all canonical). This file owns only the
+ * Pulse-specific instrument: the app-bar helpers, the Identity Seismograph and
+ * orbit, the etched readout, roster table/cards, decision rail, signal-volume
+ * grammar, the status-word/kind-dash orthogonal channels, verdict block, empty
+ * states, and the error card.
+ *
+ * Restraint contract: zero animation, zero transition, zero viewport units, and
+ * no overflow/clip/mask/width-suppression on html or body. Page-level zero
+ * overflow is achieved constructively (shrinkable tracks, wrapping, bounded
+ * media); only the labelled table wrappers scroll horizontally. Status is
+ * word + hue + shape; signal kind is visible text + a stable dash pattern that
+ * never borrows a status or brand hue. Structural gradients exist only as
+ * etched graph paper, the table scroll affordance, and the volume dash texture.
  */
 
+/* ---- preserved chrome & base ------------------------------------------- */
 .page-console { background: var(--bg); }
 .console--wide { max-width: 1120px; }
 .back-link { display: inline-block; margin-bottom: 18px; color: var(--ink-3); font-size: 13px; font-weight: 500; }
 .back-link:hover { color: var(--accent); }
+/* Inline subject identifiers such as <code>{{SUB}}</code> wrap instead of forcing document overflow. */
+code { overflow-wrap: anywhere; }
 
 /* Top-bar right-side helpers rendered by Pulse's topbar(). */
 .allapps {
@@ -20,83 +31,257 @@
 }
 .allapps:hover { background: var(--bg-2); color: var(--ink); }
 .allapps svg { width: 14px; height: 14px; opacity: .8; }
-.userchip { display: inline-flex; align-items: center; gap: 8px; padding-left: 4px; }
+.userchip { display: inline-flex; align-items: center; gap: 8px; padding-left: 4px; min-width: 0; }
 .userchip__avatar {
   width: 28px; height: 28px; border-radius: 8px; flex: 0 0 auto;
   display: inline-flex; align-items: center; justify-content: center;
   background: var(--accent); color: #fff; font-weight: 600; font-size: 12px;
 }
-.user-email { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.user-email { font-size: 13px; color: var(--ink-2); font-weight: 500; overflow-wrap: anywhere; }
 @media (max-width: 640px) { .user-email, .topbar__title { display: none; } }
 
-/* ---- stat-level tints (canonical .stat / .stat__value provide the base) -- */
-.stat--danger .stat__value { color: var(--down-ink); }
-.stat--warn .stat__value { color: var(--warn-ink); }
+/* ---- skip link — first focusable child, zero layout shift on focus ------ */
+.skip-link {
+  position: fixed; top: 12px; left: 12px; z-index: 999;
+  padding: 9px 14px; border-radius: var(--radius);
+  background: var(--ink); color: var(--surface);
+  font-size: 13px; font-weight: 600; text-decoration: none;
+  box-shadow: var(--sh-sm); transform: translateY(-160%);
+}
+.skip-link:focus, .skip-link:focus-visible { transform: none; outline: 2px solid var(--accent); outline-offset: 2px; }
+.console:focus { outline: none; }
+.console:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 
-/* ---- panels (flat, border-led — Pulse's card equivalent) ---------------- */
-.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--sh-xs); margin-bottom: 24px; overflow: hidden; }
-.panel__head { padding: 16px 22px; border-bottom: 1px solid var(--border); }
-.panel__head h2 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
-.panel__body { padding: 22px; }
-.panel__body--flush { padding: 0; }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-.two-col .panel { margin-bottom: 0; }
+/* ---- section rhythm & eyebrow headings --------------------------------- */
+.console--wide > section { margin-top: var(--sp-8); padding-top: var(--sp-6); border-top: 1px solid var(--hairline); min-width: 0; }
+.sec-h {
+  margin: 0 0 var(--sp-4); font-size: var(--fs-eyebrow); font-weight: 650;
+  letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--ink-3);
+}
+.tape-key, .legend-cap, .orbit-key, .volume-note {
+  margin: var(--sp-3) 0 0; font-size: 11px; line-height: 1.5; color: var(--ink-3); overflow-wrap: anywhere;
+}
+.legend-cap { margin: 0 0 var(--sp-2); letter-spacing: var(--track-eyebrow); text-transform: uppercase; }
 
-/* ---- risk data-table ---------------------------------------------------- */
-.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-.data-table th, .data-table td { padding: 12px 22px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
-.data-table th { font-size: 11.5px; letter-spacing: .02em; color: var(--ink-3); font-weight: 600; background: var(--surface-2); }
-.data-table tbody tr:last-child td { border-bottom: 0; }
-.data-table tbody tr:hover { background: var(--surface-2); }
-.data-table td { color: var(--ink-2); }
-.cell-sub a { font-weight: 600; color: var(--accent-2); }
-.cell-num { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
-.cell-reasons { color: var(--ink-2); }
-.cell-kind { font-family: var(--mono); font-size: 13px; color: var(--ink); }
-.cell-ua { color: var(--ink-3); max-width: 320px; overflow-wrap: anywhere; }
-.empty-cell { color: var(--ink-3); text-align: center; padding: 40px 22px; }
+/* ---- etched readout ----------------------------------------------------- */
+.seismo-readout {
+  display: flex; flex-wrap: wrap; gap: 0; margin: 0;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--sh-xs);
+}
+.readout-cell {
+  flex: 1 1 140px; min-width: 0; padding: var(--sp-4) var(--sp-5);
+  border-left: 1px solid var(--hairline);
+}
+.readout-cell:first-child { border-left: 0; }
+.readout-cell dt { margin: 0; font-size: var(--fs-eyebrow); letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--ink-3); }
+.readout-cell dd { margin: 6px 0 0; font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ink); }
+.readout-cell[data-level="high"] dd { color: var(--down-ink); }
+.readout-cell[data-level="medium"] dd { color: var(--warn-ink); }
 
-/* ---- risk-level badges (Pulse tints; overrides the canonical .badge alias) */
+/* ---- seismograph & orbit — shared instrument frame ---------------------- */
+.seismograph, .identity-orbit {
+  margin: 0; min-width: 0;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--sh-xs);
+  padding: var(--sp-4);
+}
+.seismograph__plot, .identity-orbit__plot {
+  display: block; width: 100%; max-width: 100%; height: auto;
+  border: 1px solid var(--hairline); border-radius: var(--r-sm);
+  /* etched graph paper (structural gradient exception #1) */
+  background-color: var(--surface-etched);
+  background-image:
+    repeating-linear-gradient(to right, var(--grid-line) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px 32px);
+}
+.identity-orbit__plot { max-width: 420px; margin: 0 auto; }
+
+/* threshold rules — neutral structure, never a status hue */
+.threshold { color: var(--ink-3); }
+.threshold--medium { stroke-dasharray: 4 4; }
+.threshold--high { color: var(--ink); stroke-width: 1.5; }
+
+/* trace path */
+.seismograph__trace { color: var(--ink-2); stroke-width: 1.5; }
+
+/* points — status via shape channel (CSS drives fill/stroke, not the r attr) */
+.seismograph__point, .identity-orbit__point { color: var(--ink-3); stroke: currentColor; }
+.seismograph__point[data-level="low"], .identity-orbit__point[data-level="low"] { color: var(--ok); stroke-width: 1; }
+.seismograph__point[data-level="medium"], .identity-orbit__point[data-level="medium"] { color: var(--warn); fill: var(--surface); stroke-width: 2; }
+.seismograph__point[data-level="high"], .identity-orbit__point[data-level="high"] { color: var(--down); stroke-width: 2.5; paint-order: stroke; }
+/* kind dash — category channel stacked on the point stroke, never a status hue */
+.seismograph__point[data-kind-dash="1"], .identity-orbit__point[data-kind-dash="1"] { stroke-dasharray: 6 3; }
+.seismograph__point[data-kind-dash="2"], .identity-orbit__point[data-kind-dash="2"] { stroke-dasharray: 1.5 3; }
+.seismograph__point[data-kind-dash="3"], .identity-orbit__point[data-kind-dash="3"] { stroke-dasharray: 7 2 2 2; }
+
+/* empty-instrument text */
+.seismograph__empty, .identity-orbit__empty {
+  color: var(--ink-3); font-family: var(--mono); font-size: 13px; letter-spacing: .12em;
+}
+
+/* orbit envelope + readout */
+.identity-orbit__envelope { color: var(--ink-3); stroke-dasharray: 3 3; }
+.identity-orbit__readout {
+  display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2) var(--sp-5);
+  margin: var(--sp-4) 0 0;
+}
+.identity-orbit__readout > div { display: flex; justify-content: space-between; gap: var(--sp-3); min-width: 0; padding: 6px 0; border-bottom: 1px solid var(--hairline); }
+.identity-orbit__readout dt { margin: 0; font-size: var(--fs-eyebrow); letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--ink-3); }
+.identity-orbit__readout dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); overflow-wrap: anywhere; }
+
+/* kind key — visible word + a border-drawn sample line that survives forced colors */
+.seismograph__key, .identity-orbit__key {
+  list-style: none; margin: var(--sp-3) 0 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4);
+}
+.seismograph__key li, .identity-orbit__key li {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 12px; color: var(--ink-2); min-width: 0; overflow-wrap: anywhere;
+}
+.seismograph__key span[aria-hidden], .identity-orbit__key span[aria-hidden] {
+  display: inline-block; width: 28px; height: 0; font-size: 0;
+  border-top: 2px solid var(--ink-2);
+}
+.seismograph__key li[data-kind-dash="1"] span[aria-hidden], .identity-orbit__key li[data-kind-dash="1"] span[aria-hidden] { border-top-style: dashed; }
+.seismograph__key li[data-kind-dash="2"] span[aria-hidden], .identity-orbit__key li[data-kind-dash="2"] span[aria-hidden] { border-top-style: dotted; }
+.seismograph__key li[data-kind-dash="3"] span[aria-hidden], .identity-orbit__key li[data-kind-dash="3"] span[aria-hidden] { border-top-style: double; height: 4px; }
+
+/* ---- endpoint legend ---------------------------------------------------- */
+.tape-legend { margin-top: var(--sp-4); min-width: 0; }
+.endpoint-legend {
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4);
+}
+.endpoint-legend li { display: inline-flex; min-width: 0; }
+.endpoint-legend a { display: inline-flex; align-items: center; gap: 8px; color: var(--ink-2); font-size: 12.5px; min-width: 0; }
+.endpoint-legend a:hover { color: var(--accent); }
+.endpoint-legend__sub { font-family: var(--mono); overflow-wrap: anywhere; min-width: 0; }
+.endpoint-legend__level { font-size: var(--fs-eyebrow); letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--ink-3); }
+.endpoint-legend li::before { content: ""; width: 10px; height: 10px; flex: 0 0 auto; background: var(--ink-3); }
+.endpoint-legend li[data-level="low"]::before { background: var(--ok); clip-path: circle(50%); }
+.endpoint-legend li[data-level="medium"]::before { background: var(--warn); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.endpoint-legend li[data-level="high"]::before { background: var(--down); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.endpoint-legend__empty { margin: 0; color: var(--ink-3); font-size: 13px; }
+
+/* ---- roster: table (>=768) <-> cards (<=700), mutually exclusive -------- */
+.roster-cards { display: none; grid-template-columns: repeat(auto-fill, minmax(0, 1fr)); gap: var(--sp-3); margin-top: var(--sp-4); }
+.roster-cards__empty { display: none; margin: var(--sp-4) 0 0; color: var(--ink-3); font-size: 13px; }
+.roster-card {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto;
+  gap: 2px var(--sp-4); align-items: baseline; min-width: 0;
+  padding: var(--sp-3) var(--sp-4); border: 1px solid var(--border);
+  border-inline-start: 3px solid var(--border-2); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink-2);
+}
+.roster-card > * { min-width: 0; }
+.roster-card:hover { border-color: var(--border-2); color: var(--ink); }
+.roster-card__sub { grid-column: 1; font-family: var(--mono); font-size: 13px; color: var(--ink); overflow-wrap: anywhere; min-width: 0; }
+.roster-card__score { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; color: var(--ink); }
+.roster-card__level { grid-column: 1; font-size: var(--fs-eyebrow); letter-spacing: var(--track-eyebrow); text-transform: uppercase; color: var(--ink-3); }
+.roster-card[data-level="low"] { border-inline-start-color: var(--ok); }
+.roster-card[data-level="medium"] { border-inline-start-color: var(--warn); }
+.roster-card[data-level="high"] { border-inline-start-color: var(--down); }
+/* status shape channel — the level word takes the semantic hue and a fixed geometric
+   mark (low circle / medium diamond / high triangle) drawn with currentColor; a third
+   status channel alongside the visible word and the colored inline border. */
+.roster-card__level::before {
+  content: ""; display: inline-block; vertical-align: middle; margin-inline-end: 6px;
+  width: 8px; height: 8px; background: currentColor;
+}
+.roster-card[data-level="low"] .roster-card__level { color: var(--ok-ink); }
+.roster-card[data-level="medium"] .roster-card__level { color: var(--warn-ink); }
+.roster-card[data-level="high"] .roster-card__level { color: var(--down-ink); }
+.roster-card[data-level="low"] .roster-card__level::before { border-radius: 50%; }
+.roster-card[data-level="medium"] .roster-card__level::before { transform: rotate(45deg); }
+.roster-card[data-level="high"] .roster-card__level::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+
+/* ---- decision rail — a ruled measuring spine ---------------------------- */
+.decision-rail { list-style: none; margin: 0; padding: 0 0 0 var(--sp-5); border-left: 2px solid var(--frame-rule); }
+.decision-rail--empty { padding: 0; border-left: 0; color: var(--ink-3); }
+.decision-rail--empty p { margin: 0; font-size: 13px; }
+.decision-mark { position: relative; padding: var(--sp-3) 0; border-bottom: 1px solid var(--hairline); min-width: 0; }
+.decision-mark:last-child { border-bottom: 0; }
+.decision-mark::before { content: ""; position: absolute; left: calc(-1 * var(--sp-5) - 2px); top: 50%; width: var(--sp-3); height: 2px; background: var(--frame-marker); }
+.decision-mark a { font-family: var(--mono); font-size: 13px; color: var(--accent-2); font-weight: 600; overflow-wrap: anywhere; }
+.decision-mark time { display: block; margin: 2px 0; font-size: var(--fs-eyebrow); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.decision-mark span { color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; }
+
+/* ---- access decisions (subject view) ------------------------------------ */
+.access-decisions { list-style: none; margin: 0; padding: 0; }
+.access-decision { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-3); padding: var(--sp-3) 0; border-bottom: 1px solid var(--hairline); min-width: 0; }
+.access-decision:last-child { border-bottom: 0; }
+.access-decision__tag { font-size: 11px; font-weight: 550; color: var(--down-ink); background: var(--down-soft); border: 1px solid var(--down-border); border-radius: var(--radius-sm); padding: 2px 8px; }
+.access-decision time { font-size: var(--fs-eyebrow); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.access-decision span:last-child { color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; min-width: 0; }
+
+/* ---- signal volume by kind ---------------------------------------------- */
+.signal-volume { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-3); }
+.signal-volume--empty { color: var(--ink-3); }
+.signal-volume--empty p { margin: 0; font-size: 13px; }
+.signal-volume__row { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.signal-volume__row > * { min-width: 0; }
+.signal-volume__kind { font-family: var(--mono); font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.signal-volume__rule { position: relative; height: 8px; background: var(--bg-2); border-radius: var(--r-pill); overflow: hidden; }
+.signal-volume__rule::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: var(--signal-share, 0%);
+  /* data-carrying volume dash texture (structural gradient exception #3) */
+  background-color: var(--ink-2);
+}
+.signal-volume__row[data-kind-dash="1"] .signal-volume__rule::before { background-image: repeating-linear-gradient(90deg, transparent 0 3px, var(--surface) 3px 5px); }
+.signal-volume__row[data-kind-dash="2"] .signal-volume__rule::before { background-image: repeating-linear-gradient(90deg, transparent 0 2px, var(--surface) 2px 3px); }
+.signal-volume__row[data-kind-dash="3"] .signal-volume__rule::before { background-image: repeating-linear-gradient(90deg, transparent 0 4px, var(--surface) 4px 5px, transparent 5px 8px, var(--surface) 8px 9px); }
+.signal-volume__count { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; color: var(--ink); }
+
+/* ---- risk-level badges — word + hue + shape (third status channel) ------ */
 .badge { text-transform: none; letter-spacing: 0; border-radius: var(--radius-sm); font-weight: 550; padding: 2px 8px; background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--border); }
 .badge-low { background: var(--ok-soft); border-color: var(--ok-border); color: var(--ok-ink); }
-.badge-medium { background: var(--warn-soft); border-color: var(--warn-border); color: var(--warn-ink); }
-.badge-high { background: var(--down-soft); border-color: var(--down-border); color: var(--down-ink); }
+.badge-medium { background: var(--warn-soft); border-color: var(--warn-border); color: var(--warn-ink); padding-right: 11px; clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); }
+.badge-high { background: var(--down-soft); border-color: var(--down-border); color: var(--down-ink); padding-right: 13px; clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 50%, 100% 100%, 0 100%); }
 
-/* ---- verdict ------------------------------------------------------------ */
-.verdict { display: flex; align-items: center; gap: 24px; }
+/* ---- verdict (subject view) --------------------------------------------- */
+.verdict { display: flex; align-items: center; gap: 24px; min-width: 0; }
+.verdict > * { min-width: 0; }
 .verdict--empty .verdict__score { color: var(--ink-3); }
-.verdict__score { font-size: 48px; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--ink); }
+.verdict__score { font-size: 48px; font-weight: 600; letter-spacing: -.03em; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .verdict__max { font-size: 18px; font-weight: 500; color: var(--ink-3); }
 .verdict__meta { display: flex; flex-direction: column; gap: 8px; }
-.verdict__reasons { color: var(--ink-2); }
+.verdict__reasons { color: var(--ink-2); overflow-wrap: anywhere; }
 .verdict__updated { font-size: 11.5px; color: var(--ink-3); }
 .breakdown { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
 .breakdown__k { font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3); font-weight: 600; }
-.breakdown__v { color: var(--ink-2); }
+.breakdown__v { color: var(--ink-2); overflow-wrap: anywhere; }
 
-/* ---- behavioral key/value grid ------------------------------------------ */
-.kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
-.kv { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.kv__k { color: var(--ink-2); }
-.kv__v { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink); }
-
-/* ---- decision timeline -------------------------------------------------- */
-.timeline { list-style: none; margin: 0; padding: 0; }
-.timeline__item { padding: 12px 0; border-bottom: 1px solid var(--border); }
-.timeline__item:last-child { border-bottom: 0; }
-.timeline__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.timeline__head a { font-weight: 600; color: var(--accent-2); }
-.timeline__tag { font-size: 11px; font-weight: 550; letter-spacing: 0; color: var(--down-ink); background: var(--down-soft); border: 1px solid var(--down-border); border-radius: var(--radius-sm); padding: 2px 8px; }
-.timeline__time { font-size: 11.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.timeline__body { margin-top: 4px; color: var(--ink-2); font-size: 13px; }
-
-/* ---- signal-volume bars ------------------------------------------------- */
-.bars { display: flex; flex-direction: column; gap: 12px; }
-.bar-row { display: grid; grid-template-columns: 160px 1fr 48px; align-items: center; gap: 12px; }
-.bar-row__label { font-family: var(--mono); font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
-.bar-row__track { height: 8px; background: var(--bg-2); border-radius: 999px; overflow: hidden; }
-.bar-row__fill { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
-.bar-row__count { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 13px; color: var(--ink); }
+/* ---- data table (labelled contained-scroll) ----------------------------- */
+.tablewrap {
+  max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); box-shadow: var(--sh-xs); min-width: 0;
+  /* pure-CSS scroll affordance — shadows appear only when content overflows
+     (structural gradient exception #2) */
+  background-image:
+    linear-gradient(to right, var(--surface) 30%, transparent),
+    linear-gradient(to right, transparent, var(--surface) 70%);
+  background-position: left center, right center;
+  background-repeat: no-repeat; background-size: 40px 100%; background-attachment: local, local;
+}
+.tablewrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.data-table caption { caption-side: top; text-align: left; padding: var(--sp-3) 22px; font-size: 11px; color: var(--ink-3); letter-spacing: .04em; }
+.data-table th, .data-table td { padding: 10px 22px; text-align: left; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+.data-table th { font-size: 11.5px; letter-spacing: .02em; color: var(--ink-3); font-weight: 600; text-transform: uppercase; white-space: nowrap; }
+.data-table tbody tr:last-child td { border-bottom: 0; }
+.data-table td { color: var(--ink-2); }
+.data-table .col-subject a, .data-table .col-subject { font-family: var(--mono); overflow-wrap: anywhere; }
+.data-table .col-subject a { font-weight: 600; color: var(--accent-2); }
+.data-table .col-score { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--ink); }
+.data-table .col-reasons, .data-table .col-deviation { color: var(--ink-2); overflow-wrap: anywhere; }
+.data-table .col-kind { font-family: var(--mono); font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.data-table .col-ip { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.data-table .col-ua { color: var(--ink-3); max-width: 320px; overflow-wrap: anywhere; }
+.roster-sec .data-table, .ledger-sec .data-table { min-width: 560px; }
+.history-sec .data-table { min-width: 640px; }
+.empty-cell { color: var(--ink-3); text-align: center; padding: 40px 22px; }
 
 /* ---- empty states ------------------------------------------------------- */
 .empty-state { text-align: center; padding: 40px 16px; color: var(--ink-3); }
@@ -108,8 +293,40 @@
 .error-card__title { margin: 8px 0; font-size: 22px; font-weight: 600; }
 .error-card__msg { margin: 0 0 24px; color: var(--ink-2); }
 
+/* ---- breakpoints (in addition to the 640px topbar rule) ----------------- */
 @media (max-width: 880px) {
-  .two-col { grid-template-columns: 1fr; }
-  .kv-grid { grid-template-columns: 1fr; }
-  .bar-row { grid-template-columns: 110px 1fr 40px; }
+  .identity-orbit__readout { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+  .roster-sec .tablewrap { display: none; }
+  .roster-cards { display: grid; }
+  .roster-cards__empty { display: block; }
+}
+@media (max-width: 400px) {
+  .topbar { padding-inline: var(--sp-3); }
+  .topbar__inner { gap: var(--sp-2); min-width: 0; }
+  .brand { flex: 0 0 auto; gap: 0; }
+  .brand__word { display: none; }
+  .topbar__right { min-width: 0; gap: 4px; }
+  .allapps { width: 32px; padding: 0; justify-content: center; flex: 0 0 32px; font-size: 0; }
+  .userchip { padding-left: 0; }
+  .seismograph__plot, .identity-orbit__plot { background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px; }
+  .readout-cell dd { font-size: 18px; }
+  .roster-card__score { font-size: 24px; }
+}
+
+/* ---- forced colors — status by word+shape+Highlight; kind by word+dash -- */
+@media (forced-colors: active) {
+  .seismograph, .identity-orbit, .tablewrap, .roster-card, .decision-rail,
+  .seismo-readout, .verdict, .signal-volume__row { border-color: CanvasText; box-shadow: none; background-image: none; }
+  .seismograph__plot, .identity-orbit__plot { background: Canvas; }
+  .seismograph__trace, .threshold { stroke: CanvasText; }
+  .seismograph__point, .identity-orbit__point { fill: CanvasText; stroke: CanvasText; }
+  .seismograph__point[data-level="high"], .identity-orbit__point[data-level="high"] { fill: Highlight; stroke: Highlight; }
+  .seismograph__key span, .identity-orbit__key span { border-top-color: CanvasText; }
+  .signal-volume__rule { border: 1px solid CanvasText; }
+  .signal-volume__rule::before { background: CanvasText; background-image: none; }
+  .identity-orbit__envelope { stroke: CanvasText; }
+  .endpoint-legend li::before { background: CanvasText; }
+  .roster-card__level::before { background: CanvasText; }
 }
