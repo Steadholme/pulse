@@ -664,6 +664,170 @@ fn trace_svgs_have_truthful_accessible_titles_and_descriptions() {
 }
 
 #[test]
+fn readout_reports_latest_verdict_freshness_truthfully() {
+    for (updated_at, expected) in [
+        (NOW - 5, "5s ago"),
+        (NOW - 90, "1m ago"),
+        (NOW - 7_200, "2.0h ago"),
+        (NOW - 3 * 86_400, "3d ago"),
+    ] {
+        let rendered = probe(
+            &[risk("sub", 10.0, "low", updated_at)],
+            &[],
+            &[],
+            &[],
+            "sub",
+            &[],
+        );
+        let readout = fragment(&rendered, "readout");
+        assert!(readout.contains("readout-cell--meta"));
+        assert!(readout.contains("Latest verdict"));
+        assert!(
+            readout.contains(&format!(r#"data-ts="{updated_at}">{expected}<"#)),
+            "expected {expected} for delta {}",
+            NOW - updated_at
+        );
+    }
+
+    // The freshest verdict write wins across the loaded slice, not the top-scored row.
+    let rendered = probe(
+        &[
+            risk("a", 90.0, "high", NOW - 600),
+            risk("b", 10.0, "low", NOW - 60),
+        ],
+        &[],
+        &[],
+        &[],
+        "a",
+        &[],
+    );
+    assert!(fragment(&rendered, "readout").contains(&format!(r#"data-ts="{}">1m ago<"#, NOW - 60)));
+}
+
+#[test]
+fn readout_clock_skew_is_reported_not_clamped() {
+    let rendered = probe(
+        &[risk("sub", 10.0, "low", NOW + 120)],
+        &[],
+        &[],
+        &[],
+        "sub",
+        &[],
+    );
+    let readout = fragment(&rendered, "readout");
+    assert!(readout.contains("ahead of clock"));
+    assert!(!readout.contains("ago"));
+}
+
+#[test]
+fn readout_stays_silent_with_no_verdicts() {
+    let rendered = probe(&[], &[], &[], &[], "sub", &[]);
+    let readout = fragment(&rendered, "readout");
+    assert!(readout.contains("Latest verdict"));
+    assert!(readout.contains("<dd>—</dd>"));
+    assert!(!readout.contains("data-ts"));
+    assert!(!readout.contains("ago"));
+}
+
+#[test]
+fn trace_calibration_reports_depth_window_and_freshness() {
+    let signals = vec![
+        signal("s1", "sub", "login.success", "10.0.0.1", "ua", NOW - 3_660),
+        signal("s2", "sub", "login.success", "10.0.0.1", "ua", NOW - 60),
+    ];
+    let rendered = probe(&[], &[], &[], &signals, "sub", &signals);
+    for key in ["seismograph_svg", "orbit_svg"] {
+        let figure = fragment(&rendered, key);
+        assert!(figure.contains(r#"<figcaption class="tape-meta">"#));
+        assert!(figure.contains("all 2 recorded signals"), "depth in {key}");
+        assert!(figure.contains("1.0h window"), "span in {key}");
+        assert!(
+            figure.contains("last observation 1m ago (Jan 15, 2027 07:59 UTC)"),
+            "freshness in {key}"
+        );
+        assert!(figure.contains("bounded history, not a live feed"));
+        assert!(!figure.contains("window saturated"));
+    }
+}
+
+#[test]
+fn saturated_window_is_declared_per_view_limit() {
+    let worst: Vec<Signal> = (0..SEISMO_TRACE_LIMIT)
+        .map(|index| {
+            signal(
+                &format!("w{index}"),
+                "sub",
+                "login.success",
+                "",
+                "",
+                NOW - 10_000 + index as i64,
+            )
+        })
+        .collect();
+    let subject: Vec<Signal> = (0..USER_SIGNAL_LIMIT)
+        .map(|index| {
+            signal(
+                &format!("u{index}"),
+                "sub",
+                "login.success",
+                "",
+                "",
+                NOW - 10_000 + index as i64,
+            )
+        })
+        .collect();
+    let rendered = probe(&[], &[], &[], &worst, "sub", &subject);
+
+    let tape = fragment(&rendered, "seismograph_svg");
+    assert!(tape.contains(&format!(
+        "the {SEISMO_TRACE_LIMIT} most recent signals (window saturated)"
+    )));
+    assert!(!tape.contains(&format!("all {SEISMO_TRACE_LIMIT} recorded signals")));
+
+    let orbit = fragment(&rendered, "orbit_svg");
+    assert!(orbit.contains(&format!(
+        "the {USER_SIGNAL_LIMIT} most recent signals (window saturated)"
+    )));
+    assert!(!orbit.contains(&format!("all {USER_SIGNAL_LIMIT} recorded signals")));
+}
+
+#[test]
+fn single_observation_calibration_is_exact() {
+    let one = signal("s1", "sub", "login.success", "", "", NOW - 30);
+    let rendered = probe(
+        &[],
+        &[],
+        &[],
+        std::slice::from_ref(&one),
+        "sub",
+        std::slice::from_ref(&one),
+    );
+    for key in ["seismograph_svg", "orbit_svg"] {
+        let figure = fragment(&rendered, key);
+        assert!(
+            figure.contains("the only recorded signal"),
+            "depth in {key}"
+        );
+        assert!(figure.contains("single observation"), "window in {key}");
+        assert!(figure.contains("30s ago"), "freshness in {key}");
+    }
+}
+
+#[test]
+fn empty_trace_calibration_stays_silent() {
+    let rendered = probe(&[], &[], &[], &[], "sub", &[]);
+    for key in ["seismograph_svg", "orbit_svg"] {
+        let figure = fragment(&rendered, key);
+        assert!(
+            figure.contains("No observations recorded"),
+            "empty state in {key}"
+        );
+        assert!(!figure.contains("ago"), "no fabricated freshness in {key}");
+        assert!(!figure.contains("window"), "no fabricated span in {key}");
+    }
+}
+
+#[test]
 fn volume_is_category_only_and_carries_no_status_tone() {
     let sig = signal("s1", "sub", "login.failure", "", "", NOW);
     let rendered = probe(&[], &[], &[volume("login.failure", 9)], &[sig], "sub", &[]);
@@ -692,4 +856,43 @@ async fn template_values_cannot_smuggle_later_tokens() {
     assert!(body.contains("<h1>Subject <code>{{VERDICT}}</code></h1>"));
     assert!(body.contains("reason {{SIGNAL_ROWS}} stays text"));
     assert_eq!(occurrences(&body, "class=\"verdict\""), 1);
+}
+
+#[tokio::test]
+async fn calibrated_instrument_headings_and_meta_render_end_to_end() {
+    let store = Arc::new(InMemoryStore::new());
+    store
+        .upsert_risk(&risk("subject-0", 80.0, "high", NOW))
+        .await
+        .unwrap();
+    store
+        .record_signal(&signal(
+            "s1",
+            "subject-0",
+            "login.failure",
+            "203.0.113.9",
+            "ua",
+            NOW,
+        ))
+        .await
+        .unwrap();
+    let state = state_with_store(store);
+
+    let (status, body) = call(&state, "/").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("<h1>Identity Seismograph</h1>"));
+    assert!(body.contains("Instrument readout"));
+    assert!(body.contains("Causal trace — highest-risk subject"));
+    assert!(
+        body.contains("Risk overview"),
+        "estate wayfinding name stays on the overview"
+    );
+    assert!(body.contains(r#"<figcaption class="tape-meta">"#));
+    assert!(body.contains("Latest verdict"));
+
+    let (status, body) = call(&state, "/user/subject-0").await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.contains("Reconstructed verdict"));
+    assert!(body.contains("Subject reconstruction"));
+    assert!(body.contains(r#"<figcaption class="tape-meta">"#));
 }

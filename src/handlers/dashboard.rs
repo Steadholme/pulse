@@ -3,6 +3,9 @@
 //! Mounted behind the gateway `auth=sso` route. Both views are read-only and render a causal,
 //! paper-instrument account of identity risk: the overview features the current worst subject,
 //! while the subject view renders a bounded reconstruction from its loaded history slice.
+//! Each trace instrument carries a calibration line (evidence depth, observation window,
+//! freshness) derived only from the loaded slice — an empty trace reports silence, never an
+//! estimate.
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
@@ -41,6 +44,7 @@ struct TracePoint {
 
 pub async fn index(State(state): State<AppState>, headers: HeaderMap) -> Response {
     let email = auth::display_email(&headers);
+    let now = now_secs();
 
     let risks = state.store.list_risks(DASHBOARD_LIMIT).await;
     let revocations = state.store.list_revocations(DASHBOARD_LIMIT).await;
@@ -61,8 +65,8 @@ pub async fn index(State(state): State<AppState>, headers: HeaderMap) -> Respons
         None => Vec::new(),
     };
 
-    let readout = render_readout(&risks, total_signals);
-    let seismograph = render_seismograph(&trace, &kind_dash);
+    let readout = render_readout(&risks, total_signals, now);
+    let seismograph = render_seismograph(&trace, &kind_dash, now);
     let roster_rows = render_roster_rows(&overview);
     let roster_cards = render_roster_cards(&overview);
     let endpoint_legend = render_endpoint_legend(&overview);
@@ -71,6 +75,8 @@ pub async fn index(State(state): State<AppState>, headers: HeaderMap) -> Respons
 
     // Legacy and new token names bridge the parallel K3 template change. The scanner only walks
     // original template bytes, so hostile replacement text cannot smuggle a second token.
+    // "Risk overview" stays the estate wayfinding name for this view (subject pages link back to
+    // it under that label); the H1 carries the instrument identity.
     let page_topbar = topbar("Risk overview", &email);
     let body = fill_template(
         DASHBOARD_HTML,
@@ -102,13 +108,14 @@ pub async fn user(
     Path(sub): Path<String>,
 ) -> Response {
     let email = auth::display_email(&headers);
+    let now = now_secs();
 
     let risk = state.store.get_risk(&sub).await;
     let signals = state.store.signals_for_sub(&sub, USER_SIGNAL_LIMIT).await;
     let revocations = state.store.revocations_for_sub(&sub, DASHBOARD_LIMIT).await;
 
     let trace = reconstruct_trace(&signals);
-    let baseline = build_baseline(&signals, now_secs(), None);
+    let baseline = build_baseline(&signals, now, None);
     let kind_dash = build_kind_dash(trace.iter().map(|point| point.kind.as_str()));
     let breakdown = trace
         .last()
@@ -116,12 +123,12 @@ pub async fn user(
         .unwrap_or_else(|| "no signals recorded yet".to_string());
 
     let verdict = render_verdict(&sub, risk.as_ref(), &breakdown);
-    let orbit = render_orbit(&trace, &baseline, &kind_dash);
+    let orbit = render_orbit(&trace, &baseline, &kind_dash, now);
     let ledger_rows = render_deviation_ledger_rows(&trace, &kind_dash);
     let signal_rows = render_signal_history_rows(&trace, &kind_dash);
     let access_decisions = render_access_decisions(&revocations);
 
-    let page_topbar = topbar("Subject risk", &email);
+    let page_topbar = topbar("Subject reconstruction", &email);
     let escaped_sub = esc(&sub);
     let body = fill_template(
         USER_HTML,
@@ -242,20 +249,32 @@ fn fill_template(template: &str, slots: &[(&str, &str)]) -> String {
 // Overview fragments
 // ---------------------------------------------------------------------------
 
-fn render_readout(risks: &[Risk], total_signals: i64) -> String {
+fn render_readout(risks: &[Risk], total_signals: i64, now: i64) -> String {
     let high = risks.iter().filter(|risk| risk.level == "high").count();
     let medium = risks.iter().filter(|risk| risk.level == "medium").count();
+    // The freshest verdict write across the loaded slice; with no verdicts the cell
+    // stays a dash rather than inventing a reading.
+    let latest_cell = match risks.iter().map(|risk| risk.updated_at).max() {
+        Some(ts) => format!(
+            r#"<dd data-ts="{ts}">{rel}</dd>"#,
+            ts = ts,
+            rel = esc(&fmt_relative(now, ts)),
+        ),
+        None => "<dd>—</dd>".to_string(),
+    };
     format!(
         r#"<dl class="seismo-readout" aria-label="Identity risk readout">
   <div class="readout-cell"><dt>Subjects</dt><dd>{subjects}</dd></div>
   <div class="readout-cell" data-level="high"><dt>High</dt><dd>{high}</dd></div>
   <div class="readout-cell" data-level="medium"><dt>Medium</dt><dd>{medium}</dd></div>
   <div class="readout-cell"><dt>Recorded signals</dt><dd>{signals}</dd></div>
+  <div class="readout-cell readout-cell--meta"><dt>Latest verdict</dt>{latest_cell}</div>
 </dl>"#,
         subjects = risks.len(),
         high = high,
         medium = medium,
         signals = total_signals,
+        latest_cell = latest_cell,
     )
 }
 
@@ -380,7 +399,7 @@ fn render_volume(volume: &[KindCount], mapping: &KindDash) -> String {
 // Shared trace graphics and row-only emitters
 // ---------------------------------------------------------------------------
 
-fn render_seismograph(trace: &[TracePoint], mapping: &KindDash) -> String {
+fn render_seismograph(trace: &[TracePoint], mapping: &KindDash, now: i64) -> String {
     let mut out = format!(
         r#"<figure class="seismograph"><svg class="seismograph__plot" viewBox="0 0 720 220" role="img" aria-labelledby="seismograph-title seismograph-desc"><title id="seismograph-title">Causal identity-risk trace</title><desc id="seismograph-desc">A bounded reconstruction of assessments from recorded signals, calculated only from evidence available in the loaded prefix; it is not a live feed.</desc><line class="threshold threshold--medium" data-threshold="medium" x1="36" y1="{medium_y:.1}" x2="684" y2="{medium_y:.1}" stroke="currentColor"/><line class="threshold threshold--high" data-threshold="high" x1="36" y1="{high_y:.1}" x2="684" y2="{high_y:.1}" stroke="currentColor"/>"#,
         medium_y = trace_y(MEDIUM_THRESHOLD),
@@ -422,11 +441,12 @@ fn render_seismograph(trace: &[TracePoint], mapping: &KindDash) -> String {
     }
     out.push_str("</svg>");
     out.push_str(&render_kind_key(trace, mapping, "seismograph__key"));
+    out.push_str(&render_trace_calibration(trace, SEISMO_TRACE_LIMIT, now));
     out.push_str("</figure>");
     out
 }
 
-fn render_orbit(trace: &[TracePoint], baseline: &Baseline, mapping: &KindDash) -> String {
+fn render_orbit(trace: &[TracePoint], baseline: &Baseline, mapping: &KindDash, now: i64) -> String {
     let hours = fmt_hours(&baseline.active_hours);
     let mut out = format!(
         r#"<figure class="identity-orbit"><svg class="identity-orbit__plot" viewBox="0 0 420 300" role="img" aria-labelledby="orbit-title orbit-desc"><title id="orbit-title">Identity behavior orbit</title><desc id="orbit-desc">Recorded events around the learned UTC activity envelope. Points are a historical reconstruction, not live location or session telemetry.</desc><circle class="identity-orbit__envelope" data-active-hours="{hours}" cx="210" cy="145" r="104" fill="none" stroke="currentColor"/>"#,
@@ -469,8 +489,71 @@ fn render_orbit(trace: &[TracePoint], baseline: &Baseline, mapping: &KindDash) -
         burst = baseline.recent_events,
     );
     out.push_str(&render_kind_key(trace, mapping, "identity-orbit__key"));
+    out.push_str(&render_trace_calibration(trace, USER_SIGNAL_LIMIT, now));
     out.push_str("</figure>");
     out
+}
+
+/// The instrument's calibration line: how much evidence the reconstruction holds, the
+/// window it spans, and how fresh the newest observation is. Claims are limited to the
+/// loaded slice — a full window only proves saturation, never that older history is shown,
+/// and an empty trace reports silence instead of an estimate.
+fn render_trace_calibration(trace: &[TracePoint], limit: usize, now: i64) -> String {
+    let (Some(first), Some(last)) = (trace.first(), trace.last()) else {
+        return r#"<figcaption class="tape-meta">No observations recorded — the instrument reports nothing rather than estimating.</figcaption>"#
+            .to_string();
+    };
+    let depth = if trace.len() >= limit {
+        format!("the {limit} most recent signals (window saturated)")
+    } else if trace.len() == 1 {
+        "the only recorded signal".to_string()
+    } else {
+        format!("all {} recorded signals", trace.len())
+    };
+    let window = if trace.len() == 1 {
+        "single observation".to_string()
+    } else {
+        format!("{} window", fmt_span(last.ts - first.ts))
+    };
+    format!(
+        r#"<figcaption class="tape-meta">Reconstructed from {depth} · {window} · last observation {rel} ({abs} UTC) · bounded history, not a live feed.</figcaption>"#,
+        depth = depth,
+        window = window,
+        rel = esc(&fmt_relative(now, last.ts)),
+        abs = esc(&fmt_ts(last.ts)),
+    )
+}
+
+/// Relative freshness for calibration lines. A timestamp ahead of the page clock is
+/// reported as skew instead of being clamped into a fabricated "just now".
+fn fmt_relative(now: i64, ts: i64) -> String {
+    let delta = now - ts;
+    if delta < 0 {
+        return "ahead of clock".to_string();
+    }
+    if delta < 60 {
+        format!("{delta}s ago")
+    } else if delta < 3_600 {
+        format!("{}m ago", delta / 60)
+    } else if delta < 86_400 {
+        format!("{:.1}h ago", delta as f64 / 3_600.0)
+    } else {
+        format!("{}d ago", delta / 86_400)
+    }
+}
+
+/// Compact duration for the observation-window span.
+fn fmt_span(secs: i64) -> String {
+    let secs = secs.max(0);
+    if secs < 60 {
+        format!("{secs}s")
+    } else if secs < 3_600 {
+        format!("{}m", secs / 60)
+    } else if secs < 86_400 {
+        format!("{:.1}h", secs as f64 / 3_600.0)
+    } else {
+        format!("{:.1}d", secs as f64 / 86_400.0)
+    }
 }
 
 fn render_kind_key(trace: &[TracePoint], mapping: &KindDash, class_name: &str) -> String {
@@ -659,11 +742,15 @@ pub fn seismograph_probe(
     let mut probe = BTreeMap::new();
     probe.insert(
         "readout",
-        render_readout(risks, (worst_signals.len() + subject_signals.len()) as i64),
+        render_readout(
+            risks,
+            (worst_signals.len() + subject_signals.len()) as i64,
+            now,
+        ),
     );
     probe.insert(
         "seismograph_svg",
-        render_seismograph(&worst_trace, &index_kind_dash),
+        render_seismograph(&worst_trace, &index_kind_dash, now),
     );
     probe.insert("roster_rows", roster_rows);
     probe.insert("roster_cards", roster_cards);
@@ -684,7 +771,7 @@ pub fn seismograph_probe(
     );
     probe.insert(
         "orbit_svg",
-        render_orbit(&subject_trace, &baseline, &user_kind_dash),
+        render_orbit(&subject_trace, &baseline, &user_kind_dash, now),
     );
     probe.insert(
         "deviation_ledger_rows",
