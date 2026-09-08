@@ -103,3 +103,14 @@ non-root uid 10001, `pulse healthcheck` HEALTHCHECK.
 - **IP / UA enrichment is best-effort.** Today's Keystone login events do not carry IP/UA, so those
   signals are usually empty and the score is driven by failure/burst patterns; Pulse captures IP/UA
   when a producer stamps them into the event `detail` (`ip=… ua=…`).
+
+## 前端 v2（2026-09-08）
+
+Risk overview 与 Subject reconstruction 两页按 Figma 文件 `1MPjD6nBfq5opl9mBvbEDW`
+（Pulse，crimson accent）换到共享的 Steadholme v2 视觉系统。仪器语义与所有 `data-*`
+钩子保持不变（seismograph / orbit 的 SVG 由同一套渲染器产出），换的是表现层：
+应用栏、五格读数、地震仪与轨道的深色仪表面、主体名册表、决策轨、按种类的信号量条、
+状态瓦片错误页、页脚同产品线链接。
+
+样式在 `static/service.css`，与 Odyssey 基底层叠后由 `/assets/pulse-20260908.css` 以不可变
+缓存提供；改样式时同步提升该路径里的日期（测试会断言路径）。

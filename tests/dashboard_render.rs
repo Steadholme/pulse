@@ -6,7 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use axum::body::{to_bytes, Body};
-use axum::http::{Request, StatusCode};
+use axum::http::{header, Request, StatusCode};
 use pulse::config::{Config, SEISMO_TRACE_LIMIT, USER_SIGNAL_LIMIT};
 use pulse::handlers::dashboard::seismograph_probe;
 use pulse::store::{InMemoryStore, KindCount, Revocation, Risk, Signal, Store, StoreError};
@@ -136,6 +136,30 @@ async fn call(state: &AppState, path: &str) -> (StatusCode, String) {
         .await
         .expect("response body");
     (status, String::from_utf8_lossy(&bytes).into_owned())
+}
+
+#[tokio::test]
+async fn stylesheet_is_public_immutable_and_linked() {
+    let state = state_with_store(Arc::new(InMemoryStore::new()));
+    let response = app(state.clone())
+        .oneshot(get_sso("/assets/pulse-20260908.css"))
+        .await
+        .expect("stylesheet response");
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get(header::CACHE_CONTROL).unwrap(),
+        "public, max-age=31536000, immutable"
+    );
+    assert_eq!(
+        response
+            .headers()
+            .get(header::X_CONTENT_TYPE_OPTIONS)
+            .unwrap(),
+        "nosniff"
+    );
+    let (_, html) = call(&state, "/").await;
+    assert!(html.contains("/assets/pulse-20260908.css"));
+    assert!(!html.contains("<style>"));
 }
 
 fn risk(sub: &str, score: f64, level: &str, updated_at: i64) -> Risk {

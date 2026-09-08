@@ -11,11 +11,15 @@ pub mod api;
 pub mod dashboard;
 pub mod health;
 
-use axum::http::StatusCode;
+use axum::http::{header, HeaderValue, StatusCode};
+use axum::response::{IntoResponse, Response};
 use std::sync::OnceLock;
 
 /// Pulse-only CSS layered after Odyssey's canonical font, tokens, and components.
 pub const SERVICE_CSS: &str = include_str!("../../static/service.css");
+const ERROR_HTML: &str = include_str!("../../templates/error.html");
+
+pub const APP_CSS_PATH: &str = "/assets/pulse-20260908.css";
 
 static APP_CSS: OnceLock<String> = OnceLock::new();
 
@@ -31,11 +35,27 @@ pub fn app_css() -> &'static str {
         .as_str()
 }
 
+pub async fn app_css_asset() -> Response {
+    let mut response = app_css().into_response();
+    let headers = response.headers_mut();
+    headers.insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_static("text/css; charset=utf-8"),
+    );
+    headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("public, max-age=31536000, immutable"),
+    );
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    response
+}
+
 /// Cross-subdomain gateway logout (Pulse lives at risk.w33d.xyz; the IdP is at id.w33d.xyz).
 pub const LOGOUT_URL: &str = "https://sso.w33d.xyz/_gw/auth/logout";
 
-/// The Steadholme shield glyph (small, for the app-bar brand lockup).
-pub const SHIELD_SVG: &str = r##"<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="hf-shield-sm" x1="8" y1="4" x2="40" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#818CF8"/><stop offset="1" stop-color="#4F46E5"/></linearGradient></defs><path d="M24 4 8 9.5V22c0 11 7 17.4 16 21.5C33 39.4 40 33 40 22V9.5L24 4Z" fill="url(#hf-shield-sm)"/><rect x="20" y="19" width="8" height="13" rx="1" fill="#fff" fill-opacity="0.92"/><path d="M20 19v-2.5a4 4 0 0 1 8 0V19" stroke="#fff" stroke-width="2" stroke-opacity="0.92" fill="none"/></svg>"##;
 
 /// Minimal HTML escaping for text/attribute interpolation (defense-in-depth on every field).
 pub fn esc(s: &str) -> String {
@@ -46,46 +66,93 @@ pub fn esc(s: &str) -> String {
         .replace('\'', "&#x27;")
 }
 
-/// Render the shared app-bar: shield + Steadholme wordmark on the left; the page title, an "All apps"
-/// link back to the apex portal, the signed-in operator chip (avatar initial + email), and a Logout
-/// link to the gateway on the right. The chip is omitted when no identity is known (e.g. the error
-/// page), leaving just the All-apps link — matching the estate-wide chrome (see sanctum::userbox).
-pub fn topbar(page_title: &str, email: &str) -> String {
-    let chip = if email.is_empty() || email == "—" {
-        String::new()
-    } else {
-        let initial = email
-            .chars()
-            .next()
-            .map(|c| c.to_uppercase().to_string())
-            .unwrap_or_else(|| "H".to_string());
-        format!(
-            "<span class=\"userchip\"><span class=\"userchip__avatar\" aria-hidden=\"true\">{}</span><span class=\"user-email\">{}</span></span>",
-            esc(&initial),
-            esc(email),
-        )
+
+/// Icons used across the console chrome (inline so no asset request is needed).
+pub const ICON_MARK: &str = r##"<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12h5l2-7 5 14 3-7h5"/></svg>"##;
+pub const ICON_GRID: &str = r##"<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>"##;
+pub const ICON_REFRESH: &str = r##"<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/></svg>"##;
+pub const ICON_CHECK: &str = r##"<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 12 5 5L20 6"/></svg>"##;
+pub const ICON_ARROW_LEFT: &str = r##"<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>"##;
+/// The console pages, in app-bar order.
+pub const NAV: [(&str, &str); 2] = [("/", "Risk overview"), ("/api/score", "Score API")];
+
+/// Render the app bar: brand lockup + host + page pills; All apps, identity and Log out.
+pub fn app_bar(active: &str, email: Option<&str>) -> String {
+    let mut pills = String::new();
+    for (href, label) in NAV {
+        pills.push_str(&format!(
+            r#"<a class="surf{state}" href="{href}"{aria}>{label}</a>"#,
+            state = if href == active { " is-active" } else { "" },
+            href = href,
+            aria = if href == active { r#" aria-current="page""# } else { "" },
+            label = label,
+        ));
+    }
+    let chip = match email {
+        Some(value) if !value.is_empty() && value != "—" => {
+            let initial = value
+                .chars()
+                .next()
+                .map(|c| c.to_uppercase().to_string())
+                .unwrap_or_else(|| "S".to_string());
+            format!(
+                r#"<span class="userchip"><span class="userchip__avatar" aria-hidden="true">{initial}</span><span class="user-email">{email}</span></span>"#,
+                initial = esc(&initial),
+                email = esc(value),
+            )
+        }
+        _ => r#"<span class="user-email user-email--none">— (no gateway session)</span>"#.to_string(),
     };
     format!(
-        r#"<header class="topbar">
-  <div class="topbar__inner">
-    <a class="brand" href="/" aria-label="Steadholme Pulse">
-      <span class="brand__glyph" aria-hidden="true">{shield}</span>
-      <span class="brand__word">Steadholme</span>
-    </a>
-    <div class="topbar__right">
-      <span class="topbar__title">{title}</span>
-      <a class="allapps" href="https://w33d.xyz" title="All apps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>All apps</a>
-      {chip}
-      <a class="btn btn-ghost btn-sm" href="{logout}">Log out</a>
-    </div>
+        r#"<header class="suitebar">
+  <a class="suitebar__brand" href="/">
+    <span class="brand-tile" aria-hidden="true">{mark}</span>
+    <span class="suitebar__name"><b>Steadholme</b><span>Pulse · identity risk</span></span>
+  </a>
+  <span class="suitebar__host">risk.w33d.xyz</span>
+  <nav class="surfaces" aria-label="Pulse pages">{pills}</nav>
+  <span class="suitebar__spacer"></span>
+  <div class="suitebar__right">
+    <a class="allapps" href="https://w33d.xyz">{grid}<span>All apps</span></a>
+    {chip}
+    <a class="btn btn-ghost btn-sm" href="{logout}">Log out</a>
   </div>
 </header>"#,
-        shield = SHIELD_SVG,
-        title = esc(page_title),
+        mark = ICON_MARK,
+        pills = pills,
+        grid = ICON_GRID,
         chip = chip,
         logout = LOGOUT_URL,
     )
 }
+
+/// The shared page footer.
+pub const FOOTER: &str = r##"<footer class="v2-foot">
+  <span class="v2-foot__lead">Steadholme Pulse · risk.w33d.xyz · reconstructed from recorded signals</span>
+  <a href="https://audit.w33d.xyz">Watchtower</a>
+  <a href="https://status.w33d.xyz">Status</a>
+  <a href="https://w33d.xyz">All apps</a>
+</footer>"##;
+
+/// Resolve the viewer's theme from the cookie header.
+pub fn theme_of(headers: &axum::http::HeaderMap) -> &'static str {
+    odyssey::resolve_theme(
+        headers
+            .get(header::COOKIE)
+            .and_then(|value| value.to_str().ok()),
+    )
+}
+
+/// Fill a page template's chrome placeholders: theme attributes, stylesheet, app bar, footer.
+pub fn shell(template: &str, active: &str, theme: &str, email: &str) -> String {
+    template
+        .replace("{{THEME_ATTR}}", odyssey::html_theme_attr(theme))
+        .replace("{{COLOR_SCHEME}}", odyssey::color_scheme_meta(theme))
+        .replace("{{CSS_PATH}}", APP_CSS_PATH)
+        .replace("{{APPBAR}}", &app_bar(active, Some(email)))
+        .replace("{{FOOTER}}", FOOTER)
+}
+
 
 /// A risk-level pill (`low` / `medium` / `high` -> branded badge). Unknown levels render neutral.
 pub fn level_badge(level: &str) -> String {
@@ -135,34 +202,20 @@ fn month_abbr(m: time::Month) -> &'static str {
     }
 }
 
-/// A small, branded HTML error page (used by [`crate::error::AppError`]).
+/// Render the branded error document as one status tile.
 pub fn error_page(status: StatusCode, message: &str) -> String {
-    let code = status.as_u16();
     let reason = status.canonical_reason().unwrap_or("Error");
-    format!(
-        r#"<!DOCTYPE html>
-<html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light">
-<title>{code} {reason} · Pulse</title><style>{css}</style></head>
-<body class="page-console">
-{topbar}
-<main class="console">
-  <div class="error-card">
-    <div class="error-card__code">{code}</div>
-    <h1 class="error-card__title">{reason}</h1>
-    <p class="error-card__msg">{msg}</p>
-    <a class="btn btn-primary" href="/">Back to the dashboard</a>
-  </div>
-</main>
-</body></html>"#,
-        css = app_css(),
-        topbar = topbar("Pulse", "—"),
-        code = code,
-        reason = esc(reason),
-        msg = esc(message),
-    )
+    ERROR_HTML
+        .replace("{{THEME_ATTR}}", "")
+        .replace("{{COLOR_SCHEME}}", "light dark")
+        .replace("{{CSS_PATH}}", APP_CSS_PATH)
+        .replace("{{APPBAR}}", &app_bar("/", None))
+        .replace("{{FOOTER}}", FOOTER)
+        .replace("{{STATUS}}", &status.as_u16().to_string())
+        .replace("{{HEADING}}", &esc(reason))
+        .replace("{{MESSAGE}}", &esc(message))
 }
+
 
 #[cfg(test)]
 mod tests {

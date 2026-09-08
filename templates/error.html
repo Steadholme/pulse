@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"{{THEME_ATTR}}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="{{COLOR_SCHEME}}">
+  <title>{{STATUS}} · Pulse · Steadholme</title>
+  <link rel="stylesheet" href="{{CSS_PATH}}">
+</head>
+<body class="page-v2">
+{{APPBAR}}
+<main class="console">
+  <div class="status-wrap">
+    <div class="status-tile">
+      <div class="status-tile__code">{{STATUS}}</div>
+      <h1 class="status-tile__heading">{{HEADING}}</h1>
+      <p class="status-tile__detail">{{MESSAGE}}</p>
+      <div class="tags">
+        <a class="btn btn-primary" href="/">Back to the overview</a>
+        <a class="btn btn-secondary" href="https://w33d.xyz">All apps</a>
+      </div>
+    </div>
+  </div>
+{{FOOTER}}
+</main>
+</body>
+</html>

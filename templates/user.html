@@ -1,21 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"{{THEME_ATTR}}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%234F46E5'/%3E%3Cpath d='M5 17h5l2-7 5 14 3-7h7' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <meta name="color-scheme" content="{{COLOR_SCHEME}}">
   <title>Subject risk · Pulse</title>
-  <style>{{CSS}}</style>
+  <link rel="stylesheet" href="{{CSS_PATH}}">
 </head>
-<body class="page-console">
-  <a class="skip-link" href="#main">Skip to content</a>
-  {{TOPBAR}}
-  <main class="console console--wide" id="main" tabindex="-1">
+<body class="page-v2">
+<a class="skip-link" href="#main">Skip to content</a>
+{{APPBAR}}
+<main class="console console--wide" id="main" tabindex="-1">
+
     <a class="back-link" href="/">&larr; Risk overview</a>
     <div class="console__head">
       <h1>Subject <code>{{SUB}}</code></h1>
-      <p class="sub">A bounded reconstruction from this subject's recorded signals:
+      <p class="sub">Subject reconstruction — a bounded reconstruction from this subject's recorded signals:
       verdict, orbit, deviation ledger, and access decisions.
       Not live telemetry.</p>
     </div>
@@ -73,6 +73,7 @@
         </table>
       </div>
     </section>
-  </main>
+{{FOOTER}}
+</main>
 </body>
 </html>

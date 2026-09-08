@@ -16,7 +16,7 @@ use axum::response::{Html, IntoResponse, Response};
 
 use crate::auth;
 use crate::config::{DASHBOARD_LIMIT, SEISMO_TRACE_LIMIT, USER_SIGNAL_LIMIT};
-use crate::handlers::{app_css, esc, fmt_ts, level_badge, topbar};
+use crate::handlers::{esc, fmt_ts, level_badge, shell, theme_of};
 use crate::poller::join_reasons;
 use crate::scoring::{assess, Baseline, Candidate, HIGH_THRESHOLD, MEDIUM_THRESHOLD};
 use crate::store::{build_baseline, KindCount, Revocation, Risk, Signal};
@@ -77,12 +77,9 @@ pub async fn index(State(state): State<AppState>, headers: HeaderMap) -> Respons
     // original template bytes, so hostile replacement text cannot smuggle a second token.
     // "Risk overview" stays the estate wayfinding name for this view (subject pages link back to
     // it under that label); the H1 carries the instrument identity.
-    let page_topbar = topbar("Risk overview", &email);
     let body = fill_template(
-        DASHBOARD_HTML,
+        &shell(DASHBOARD_HTML, "/", theme_of(&headers), &email),
         &[
-            ("CSS", app_css()),
-            ("TOPBAR", &page_topbar),
             ("READOUT", &readout),
             ("STATS", &readout),
             ("SEISMOGRAPH", &seismograph),
@@ -128,13 +125,10 @@ pub async fn user(
     let signal_rows = render_signal_history_rows(&trace, &kind_dash);
     let access_decisions = render_access_decisions(&revocations);
 
-    let page_topbar = topbar("Subject reconstruction", &email);
     let escaped_sub = esc(&sub);
     let body = fill_template(
-        USER_HTML,
+        &shell(USER_HTML, "/", theme_of(&headers), &email),
         &[
-            ("CSS", app_css()),
-            ("TOPBAR", &page_topbar),
             ("SUB", &escaped_sub),
             ("VERDICT", &verdict),
             ("ORBIT", &orbit),
@@ -384,7 +378,7 @@ fn render_volume(volume: &[KindCount], mapping: &KindDash) -> String {
         let share = (item.count as f64 / max as f64 * 100.0).round() as i64;
         let _ = write!(
             out,
-            r#"<li class="signal-volume__row" data-kind-dash="{dash}" style="--signal-share:{share}%"><span class="signal-volume__kind">{kind}</span><span class="signal-volume__rule" aria-hidden="true"></span><span class="signal-volume__count">{count}</span></li>"#,
+            r#"<li class="signal-volume__row" data-kind-dash="{dash}" style="--signal-share:{share}%"><span class="signal-volume__kind" data-kind="{kind}">{kind}</span><span class="signal-volume__rule" aria-hidden="true"></span><span class="signal-volume__count">{count}</span></li>"#,
             dash = dash_for(mapping, &item.kind),
             share = share,
             kind = esc(&item.kind),
